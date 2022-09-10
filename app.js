@@ -8,6 +8,7 @@ const path= require('path');
 const ejsMate= require('ejs-mate');
 const methodOverride= require('method-override');
 const session= require('express-session');
+const MongoDBStore= require('connect-mongo')(session);
 const flash= require('connect-flash');
 const passport= require('passport');
 const LocalStrategy= require('passport-local');
@@ -26,8 +27,9 @@ const campgroundRoutes= require('./routes/campgrounds');
 const reviewRoutes=require('./routes/reviews');
 
 const app= express();
+const dbUrl= 'mongodb://localhost:27017/yelp-camp';
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+mongoose.connect(dbUrl, {
     useNewUrlParser: true,
     useUnifiedTopology: true        
 });
@@ -50,7 +52,18 @@ app.use(mongoSanitize({
         replaceWith: '_'
 }));
 
+const store = new MongoDBStore({
+    url: dbUrl,
+    secret: 'thisshouldbeabettersecret!',
+    touchAfter: 24 * 60 * 60
+});
+
+store.on("error", function(e){
+    console.log("SESSION STORE ERROR", e)
+});
+
 const sessionConfig= {
+    store,
     name: 'session',
     secret: 'thisshouldbeabettersecret!',
     resave: false,
